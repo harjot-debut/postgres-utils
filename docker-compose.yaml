@@ -1,0 +1,28 @@
+version: "3.8"
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: 100m
+    max-file: 100
+
+services:
+  react-app:
+    container_name: switchboard-frontend
+    restart: always 
+    image: hs60/docker-test1:latest  
+    ports:
+      - "8080:8080"  
+    network_mode: "host"  
+  backend:
+    container_name: switchboard-backend
+    image: hs60/docker-test2:latest  
+    ports:
+      - "8000:8000" 
+    volumes:
+      - .env:/usr/src/app/.env
+      - ./uploads:/usr/src/app/uploads
+    restart: always  
+    logging: *default-logging
+    network_mode: "host"
+
