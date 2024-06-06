@@ -1,5 +1,15 @@
 #!/bin/bash
 
+
+
+set -eo pipefail
+
+handle_error() {
+  local exit_code=$?
+  echo "Script failed with error on line $1: $2"
+  exit $exit_code
+}
+
 # Check if PostgreSQL is installed
 if ! command -v psql &> /dev/null
 then
@@ -15,7 +25,7 @@ fi
 # Check if PostgreSQL service is running
 if sudo systemctl is-active --quiet postgresql
 then
-    echo "PostgreSQL service is already running."
+    echo "PostgreSQL service is running."
 else
     echo "Starting PostgreSQL service..."
     sudo systemctl start postgresql
