@@ -8,14 +8,14 @@ x-logging: &default-logging
 
 services:
   react-app:
-    container_name: switchboard-frontend
+    container_name: docker-test-FE
     restart: always 
     image: hs60/docker-test1:latest  
     ports:
       - "8080:8080"  
     network_mode: "host"  
   backend:
-    container_name: switchboard-backend
+    container_name: docker-test-BE
     image: hs60/docker-test2:latest  
     ports:
       - "8000:8000" 
