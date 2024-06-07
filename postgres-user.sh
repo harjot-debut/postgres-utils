@@ -3,19 +3,6 @@
 # Enable debugging
 
 
-
-set -eo pipefail
-
-handle_error() {
-  local exit_code=$?
-  echo "Script failed with error on line $1: $2"
-  exit $exit_code
-}
-
-
-# Execute SQL commands as the postgres user
-echo "creating USER"
-
 USER=$1
 PASSWORD=$2
 DB_NAME=$3
@@ -46,4 +33,7 @@ echo ""
 
 sudo -u postgres psql -d $DB_NAME -c "CREATE EXTENSION IF NOT EXISTS pgcrypto;"
 
-
+echo ""
+echo "=================  Testing connection to DB =================="
+echo ""
+PGPASSWORD="$PASSWORD" psql -h localhost -p 5432 -U $USER -d $DB_NAME -c "SELECT 1;"

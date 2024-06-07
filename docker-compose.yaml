@@ -3,26 +3,27 @@ version: "3.8"
 x-logging: &default-logging
   driver: json-file
   options:
-    max-size: 100m
-    max-file: 100
+    max-size: "100m" 
+    max-file: "100"   
 
 services:
   react-app:
     container_name: docker-test-FE
     restart: always 
-    image: hs60/docker-test1:latest  
-    ports:
-      - "8080:8080"  
+    image: hs60/docker-test1:latest
+    logging: *default-logging  
     network_mode: "host"  
+    volumes:
+     - ./uploads:/usr/share/nginx/html/application-files
+     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
   backend:
     container_name: docker-test-BE
     image: hs60/docker-test2:latest  
-    ports:
-      - "8000:8000" 
     volumes:
       - .env:/usr/src/app/.env
       - ./uploads:/usr/src/app/uploads
+    # command: ["bash", "-c", "/usr/src/app/create_directories.sh"]  
     restart: always  
     logging: *default-logging
     network_mode: "host"
-
