@@ -1,1 +1,9 @@
 .env
+.env copy
+
+uploads/root/application-files/chat-documents/*
+uploads/root/application-files/demo/*
+uploads/root/application-files/html-files/*
+uploads/root/application-files/organization-files/*
+uploads/root/organization-files/*
+uploads/root/application-files/temp/*

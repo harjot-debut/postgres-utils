@@ -29,3 +29,27 @@ services:
     restart: always  
     logging: *default-logging
     network_mode: "host"
+#     depends_on:
+#       - postgres_db
+
+#   postgres_db:
+#     image: postgres:16.3
+#     container_name: postgres-db
+#     restart: always
+#     volumes:
+#       - db-data:/var/lib/postgresql/data
+#       # - ./initdb.d:/docker-entrypoint-initdb.d
+#       # - ./pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+#     environment:
+#       - POSTGRES_DB=${DB_NAME}
+#       - POSTGRES_USER=${DB_USER}
+#       - POSTGRES_PASSWORD=${DB_PASSWORD}
+#       - POSTGRES_HOST_AUTH_METHOD=md5
+#       - POSTGRES_INITDB_ARGS=--auth=md5
+#     logging: *default-logging
+#     network_mode: "host"
+#     env_file:
+#       - .env
+
+# volumes:
+#   db-data:    

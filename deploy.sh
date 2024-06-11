@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Enable debugging
+./create-uploads-dir.sh
 
 docker pull hs60/docker-test1:latest 
 

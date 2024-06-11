@@ -1,0 +1,62 @@
+version: "3.8"
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "100m" 
+    max-file: "100"   
+
+services:
+  react-app:
+    container_name: docker-test-FE
+    build:
+      context: ../react-switchboard
+      dockerfile: Dockerfile
+    restart: always 
+    image: hs60/docker-test-frontend:1.0
+    logging: *default-logging  
+    network_mode: "host"
+    env_file:
+      - .env 
+    volumes:
+     - ./uploads:/usr/share/nginx/html/application-files
+     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+
+  backend:
+    container_name: docker-test-BE
+    build:
+      context: ../nestjs-backup
+      dockerfile: dockerfile
+    image: hs60/docker-test-backend:build-1.0  
+    env_file:
+      - .env
+    volumes:
+      - ./uploads:/usr/src/app/uploads 
+    restart: always  
+    logging: *default-logging
+    network_mode: "host"
+    depends_on:
+      - postgres_db
+
+  postgres_db:
+    image: postgres:16.3
+    container_name: postgres-db
+    # ports:
+    #   - 5432:5432
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # - ./initdb.d:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_HOST_AUTH_METHOD=md5
+      - POSTGRES_INITDB_ARGS=--auth=md5
+    logging: *default-logging
+    network_mode: "host"
+    env_file:
+      - .env
+
+volumes:
+  db-data:  
