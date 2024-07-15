@@ -1,0 +1,27 @@
+sudo -u postgres psql   //where -u postgres is default user
+
+
+
+// list all dbs
+
+\l
+
+
+//connect to a db 
+
+\c <db_name>
+
+
+// to see relation in db 
+
+\dt
+
+
+log in to use rcreated db 
+
+psql -U your_database_user -d your_database_name -h localhost -W
+
+
+//check current user 
+
+SELECT current_user;
