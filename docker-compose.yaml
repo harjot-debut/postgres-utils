@@ -7,31 +7,57 @@ x-logging: &default-logging
     max-file: "100"   
 
 services:
-  react-app:
+  frontend-switchboard:
     container_name: frontend-switchboard
     restart: always 
-    image: hs60/switchboard-frontend:latest
+    image: hs60/switchboard-frontend:1.0.0
     logging: *default-logging  
     network_mode: "host"
+    # command: ["/bin/bash", "-c", "mkdir /etc/nginx/conf.d/"] 
     env_file:
       - .env 
     volumes:
      - ./uploads:/usr/share/nginx/html/application-files
-     - ./nginx.conf:/etc/nginx/conf.d/default.conf
+     - /var/run/docker.sock:/var/run/docker.sock
+    #  - ./nginx/:/etc/nginx/conf.d/
 
-  backend:
+  backend-switchboard:
     container_name: backend-switchboard
-    image: hs60/switchboard-backend:latest 
+    image: hs60/switchboard-backend:1.0.0
     env_file:
       - .env
     volumes:
-      - ./uploads:/usr/src/app/uploads 
-      - ./uploads:/usr/src/app/uploads 
+      - ./uploads:/usr/src/app/uploads
+      - /var/run/docker.sock:/var/run/docker.sock
+      # - ./docker-compose.yaml:/usr/src/app/docker-compose.yaml
     restart: always  
     logging: *default-logging
+    # command: ["/bin/sh", "/usr/src/app/update-agent.sh"]
     network_mode: "host"
 #     depends_on:
 #       - postgres_db
+
+  switchboard-update:
+    container_name: switchboard-update
+    restart: always 
+    image:  hs60/switchboard-cron-job:latest
+    logging: *default-logging  
+    network_mode: "host"
+    ports: 
+      - 4000:4000
+    # command: ["/bin/sh", "apt-get install jq -y"]
+    # command:
+    #   - /bin/sh
+    #   - -c
+    #   - |
+    #     apt-get install jq -y
+    volumes:
+     - /var/run/docker.sock:/var/run/docker.sock
+     - ./docker-compose.yaml:/usr/local/bin/docker-compose.yaml
+     - ./docker-update-logs.log:/var/log/update-agent.log
+     - ./.env:/usr/local/bin/.env
+     - ./update-agent.sh:/usr/local/bin/update-agent.sh
+
 
 #   postgres_db:
 #     image: postgres:16.3
