@@ -10,7 +10,7 @@ services:
   frontend-switchboard:
     container_name: frontend-switchboard
     restart: always 
-    image: hs60/switchboard-frontend:1.0.0
+    image: hs60/switchboard-frontend:${FRONTEND_IMAGE_TAG}
     logging: *default-logging  
     network_mode: "host"
     # command: ["/bin/bash", "-c", "mkdir /etc/nginx/conf.d/"] 
@@ -23,7 +23,7 @@ services:
 
   backend-switchboard:
     container_name: backend-switchboard
-    image: hs60/switchboard-backend:1.0.0
+    image: hs60/switchboard-backend:${BACKEND_IMAGE_TAG}
     env_file:
       - .env
     volumes:

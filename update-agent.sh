@@ -1,5 +1,32 @@
 #!/bin/bash
 
+ENV_FILE=/usr/local/bin/.env 
+
+source $ENV_FILE >/dev/null 2>&1
+
+FRONTEND_CONTAINER_NAME="frontend-switchboard"
+BACKEND_CONTAINER_NAME="backend-switchboard"
+FRONTEND_CONTAINER_TAG="FRONTEND_IMAGE_TAG"
+BACKEND_CONTAINER_TAG="BACKEND_IMAGE_TAG"
+BACKEND_IMAGE_NAME="hs60/switchboard-backend"
+FRONTEND_IMAGE_NAME="hs60/switchboard-frontend"
+
+
+
+
+docker_login() {
+    echo "Logging in to Docker Hub..."
+
+    set -x
+    echo $DOCKER_HUB_TOKEN | docker login -u $DOCKER_HUB_USERNAME --password-stdin
+    set +x
+    if [ $? -ne 0 ]; then
+        echo "Error: Docker login failed"
+        exit 1
+    fi
+}
+
+
 # Set a log file
 LOG_FILE="/var/log/update-agent.log"
 
@@ -67,30 +94,32 @@ check_for_updates() {
     latest_frontend_version=$(echo $response | jq -r '.data.frontend')
     latest_backend_version=$(echo $response | jq -r '.data.backend')
 
-    FRONTEND_CONTAINER_NAME="frontend-switchboard"
+    
     FRONTEND_TAG=$(fetch_container_image_tag $FRONTEND_CONTAINER_NAME)
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to get tag for container $FRONTEND_CONTAINER_NAME"
+        echo "Error: Failed to get tag for container $FRONTEND_CONTAINER_NAME , ensure that container is running"
         exit 1
     fi
 
-    BACKEND_CONTAINER_NAME="backend-switchboard"
     BACKEND_TAG=$(fetch_container_image_tag $BACKEND_CONTAINER_NAME)
     if [ $? -ne 0 ]; then
         echo "Error: Failed to get tag for container $BACKEND_CONTAINER_NAME"
         exit 1
     fi
 
+    echo
     current_frontend_version=$FRONTEND_TAG
     current_backend_version=$BACKEND_TAG
 
+    echo
     echo "Current frontend version: $current_frontend_version"
+    echo
     echo "Current backend version: $current_backend_version"
 
     echo 
-
     echo "Latest frontend version: $latest_frontend_version"
     echo "Latest backend version: $latest_backend_version"
+    echo
 
 
 
@@ -105,11 +134,73 @@ check_for_updates() {
         backend_update_needed=true
     fi
 
+    echo
     echo "Update required for frontend: $frontend_update_needed"
+    echo
     echo "Update required for backend: $backend_update_needed"
+    echo
+
+    # if [ "$frontend_update_needed" = true ]; then
+    #     update_image "frontend-switchboard" "hs60/switchboard-frontend" "$latest_frontend_version" "FRONTEND_IMAGE_TAG"
+    #     echo "--------------------------------------------------------------------"
+    #     echo "$container_name UPDATED SUCCESSFULLY"
+    #     echo "--------------------------------------------------------------------"
+
+    #     echo 
+
+    #     echo 
+
+    #     echo "---------------------------------------------------------------------------------------------------------------------"
+    #     echo "---------------------------------------------------------------------------------------------------------------------"
+    # else
+    #     echo 
+    #     echo "------------------------------------------------------------------"
+    #     echo "No updates available for frontend."
+    #     echo "------------------------------------------------------------------"
+    #     echo
+    # fi
+
+    # if [ "$backend_update_needed" = true ]; then
+    #     update_image "backend-switchboard" "hs60/switchboard-backend" "$latest_backend_version" "BACKEND_IMAGE_TAG"
+    #     echo "--------------------------------------------------------------------"
+    #     echo "$container_name UPDATED SUCCESSFULLY"
+    #     echo "--------------------------------------------------------------------"
+
+    #     echo 
+
+    #     echo 
+
+    #     echo "---------------------------------------------------------------------------------------------------------------------"
+    #     echo "---------------------------------------------------------------------------------------------------------------------"
+    # else
+    #     echo 
+    #     echo "------------------------------------------------------------------"
+    #     echo "No updates available for backend."
+    #     echo "------------------------------------------------------------------"
+    #     echo 
+    # fi
+
 
     if [ "$frontend_update_needed" = true ]; then
-        update_image "frontend-switchboard" "hs60/switchboard-frontend" "$latest_frontend_version"
+        (
+            update_image $FRONTEND_CONTAINER_NAME $FRONTEND_IMAGE_NAME "$latest_frontend_version" "$FRONTEND_CONTAINER_TAG" $current_frontend_version
+            echo "--------------------------------------------------------------------"
+            echo "$container_name UPDATED SUCCESSFULLY"
+            echo "--------------------------------------------------------------------"
+
+            echo 
+
+            echo 
+
+            echo "---------------------------------------------------------------------------------------------------------------------"
+            echo "---------------------------------------------------------------------------------------------------------------------"
+        ) || {
+            echo
+            echo "--------------------------------------------------------------------"
+            echo "Error: Frontend update failed."
+            echo "--------------------------------------------------------------------"
+            echo
+        }
     else
         echo 
         echo "------------------------------------------------------------------"
@@ -119,7 +210,25 @@ check_for_updates() {
     fi
 
     if [ "$backend_update_needed" = true ]; then
-        update_image "backend-switchboard" "hs60/switchboard-backend" "$latest_backend_version"
+        (
+            update_image $BACKEND_CONTAINER_NAME "$BACKEND_IMAGE_NAME" "$latest_backend_version" "$BACKEND_CONTAINER_TAG" $current_backend_version
+            echo "--------------------------------------------------------------------"
+            echo "$container_name UPDATED SUCCESSFULLY"
+            echo "--------------------------------------------------------------------"
+
+            echo 
+
+            echo 
+
+            echo "---------------------------------------------------------------------------------------------------------------------"
+            echo "---------------------------------------------------------------------------------------------------------------------"
+        ) || {
+            echo
+            echo "--------------------------------------------------------------------"
+            echo "Error: Backend update failed."
+            echo "--------------------------------------------------------------------"
+            echo
+        }
     else
         echo 
         echo "------------------------------------------------------------------"
@@ -127,6 +236,9 @@ check_for_updates() {
         echo "------------------------------------------------------------------"
         echo 
     fi
+
+
+    sleep 10
 }
 
 # Function to update a specific Docker image and redeploy container
@@ -134,6 +246,10 @@ update_image() {
     container_name=$1
     image_name=$2
     latest_version=$3
+    IMAGE_TAG_NAME=$4
+    OLD_IMAGE_TAG=$5
+
+    docker_login
 
     echo "Pulling updated Docker image: $image_name:$latest_version..."
     docker pull $image_name:$latest_version
@@ -155,16 +271,16 @@ update_image() {
     fi
 
         echo 
-        echo "========================================================================================="
+        echo "==========================================================================================================================="
         echo "New image hash for $container_name :- $new_image_sha"
-        echo "========================================================================================="
+        echo "==========================================================================================================================="
         echo 
 
 
         echo 
-        echo "========================================================================================="
-        echo "current image hash $$container_name :- $current_image_sha"
-        echo "========================================================================================="
+        echo "==========================================================================================================================="
+        echo "current image hash $container_name :- $current_image_sha"
+        echo "==========================================================================================================================="
         echo 
 
 
@@ -173,24 +289,15 @@ update_image() {
 
 
         echo "Updating compose file with the latest version..."
-        tmp_file=$(mktemp)
-        cp $DOCKER_COMPOSE_FILE $DOCKER_COMPOSE_FILE-previous
-        sed "s|$image_name:.*|$image_name:$latest_version|g" $DOCKER_COMPOSE_FILE > $tmp_file
-        if [ $? -ne 0 ]; then
-            echo "Error: Failed to update compose file"
-            exit 1
-        fi
+       
+        update_env_variable "$IMAGE_TAG_NAME" "$latest_version"
+       
 
-        cat $tmp_file > $DOCKER_COMPOSE_FILE
-        rm $tmp_file
-
-        echo "NEW COMPOSE FILE"
-        cat $DOCKER_COMPOSE_FILE
-
+        sleep 5
 
 
         echo "Stopping running container: $container_name..."
-        set -x
+      
         docker stop $container_name
         if [ $? -ne 0 ]; then
             echo "Error: Failed to stop container $container_name"
@@ -202,12 +309,27 @@ update_image() {
             echo "Error: Failed to remove container $container_name"
             exit 1
         fi
-        set +x
-
+     
         sleep 10
 
+
+        echo "==================================================================="
+        echo
+        echo "Updating versions from "
+        echo
+        echo_env_variables $ENV_FILE.bak
+        echo 
+        echo "to"
+        echo
+        echo_env_variables $ENV_FILE
+        echo 
+        echo "==================================================================="
+
         echo "Starting container with updated image:- $container_name..."
-        set -x
+       
+
+
+
         $DOCKER_COMPOSE -f $DOCKER_COMPOSE_FILE up -d $container_name
         if [ $? -ne 0 ]; then
               echo
@@ -218,11 +340,25 @@ update_image() {
               echo "--------------------------------------------------------------------"
               echo "Running old version of app again"
               echo "--------------------------------------------------------------------"
-              cat $DOCKER_COMPOSE_FILE-previous > $DOCKER_COMPOSE_FILE
-               if [ $? -ne 0 ]; then
-                  echo "Error: creating old docker-compose file"
-                  exit 1
-              fi
+
+            #   cat $DOCKER_COMPOSE_FILE-previous > $DOCKER_COMPOSE_FILE
+            #    if [ $? -ne 0 ]; then
+            #       echo "Error: creating old docker-compose file"
+            #       exit 1
+            #   fi
+
+            #   cat $ENV_FILE.bak > $ENV_FILE
+
+
+              update_env_variable $IMAGE_TAG_NAME $OLD_IMAGE_TAG
+
+              echo
+              echo "=========== Restoring containers with old image tags due to error in updation ================"
+              echo 
+              echo_env_variables $ENV_FILE
+              echo
+              echo
+
               $DOCKER_COMPOSE -f $DOCKER_COMPOSE_FILE up -d $container_name
                if [ $? -ne 0 ]; then
                   echo "Error: running old verison app again "
@@ -231,17 +367,79 @@ update_image() {
               echo "--------------------------------------------------------------------"
               echo "old version of $container_name running SUCCESSFULLY"
               echo "--------------------------------------------------------------------"
-            exit 1
+           
         fi
         set +x
 
-        echo "--------------------------------------------------------------------"
-        echo "$container_name UPDATED SUCCESSFULLY"
-        echo "--------------------------------------------------------------------"
+        
     else
         echo "No update needed for $container_name."
     fi
 }
+
+
+# Function to update environment variable in .env file
+update_env_variable() {
+    local VARIABLE_NAME=$1
+    local NEW_VALUE=$2
+
+    echo "Updating $VARIABLE_NAME in .env file to $NEW_VALUE..."
+
+    # Use sed to update the variable in the .env file
+    echo 
+    echo "Updating image tag in environment vars."
+    echo 
+
+    tmp_file=$(mktemp /tmp/env.XXXXXX)
+
+    echo "backing env file --------------------------------- "
+
+    cp $ENV_FILE $ENV_FILE.bak
+
+    cp $ENV_FILE $tmp_file
+    sed -i "s|^${VARIABLE_NAME}=.*|${VARIABLE_NAME}=${NEW_VALUE}|g" $tmp_file
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to update $VARIABLE_NAME in temporary file"
+        exit 1
+    fi
+
+    echo 
+    echo 
+    # Copy the contents back to the original file
+    cat $tmp_file > $ENV_FILE
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to replace .env file with updated version"
+        exit 1
+    fi
+
+    rm $tmp_file
+
+    echo 
+    echo
+    echo "=========================== READING TAG VARIBALES ====================================="
+    echo_env_variables $ENV_FILE
+
+
+    echo 
+    echo 
+
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to update $VARIABLE_NAME in .env file"
+        exit 1
+    fi
+
+    echo "$VARIABLE_NAME updated successfully in .env file"
+}
+
+
+echo_env_variables() {
+    local variables=("$FRONTEND_CONTAINER_TAG" "$BACKEND_CONTAINER_TAG")
+
+    for var in "${variables[@]}"; do
+        grep "^${var}=" "$1"
+    done
+}
+
 
 # Run the update check
 check_for_updates
