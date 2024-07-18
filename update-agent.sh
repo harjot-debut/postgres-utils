@@ -184,6 +184,11 @@ check_for_updates() {
     if [ "$frontend_update_needed" = true ]; then
         (
             update_image $FRONTEND_CONTAINER_NAME $FRONTEND_IMAGE_NAME "$latest_frontend_version" "$FRONTEND_CONTAINER_TAG" $current_frontend_version
+
+            sleep 3
+
+            echo
+            echo
             echo "--------------------------------------------------------------------"
             echo "$container_name UPDATED SUCCESSFULLY"
             echo "--------------------------------------------------------------------"
@@ -212,6 +217,11 @@ check_for_updates() {
     if [ "$backend_update_needed" = true ]; then
         (
             update_image $BACKEND_CONTAINER_NAME "$BACKEND_IMAGE_NAME" "$latest_backend_version" "$BACKEND_CONTAINER_TAG" $current_backend_version
+            
+              sleep 3
+
+            echo
+            echo
             echo "--------------------------------------------------------------------"
             echo "$container_name UPDATED SUCCESSFULLY"
             echo "--------------------------------------------------------------------"
@@ -293,7 +303,7 @@ update_image() {
         update_env_variable "$IMAGE_TAG_NAME" "$latest_version"
        
 
-        sleep 5
+        sleep 2
 
 
         echo "Stopping running container: $container_name..."
@@ -310,7 +320,7 @@ update_image() {
             exit 1
         fi
      
-        sleep 5
+        sleep 4
 
 
         echo "==================================================================="
@@ -332,8 +342,8 @@ update_image() {
 
         $DOCKER_COMPOSE -f $DOCKER_COMPOSE_FILE up -d $container_name
 
-        sleep 5
-        
+   
+
         if [ $? -ne 0 ]; then
               echo
               echo "--------------------------------------------------------------------"
@@ -367,9 +377,16 @@ update_image() {
                   echo "Error: running old verison app again "
                   exit 1
               fi
+
+              sleep 3
+
+              echo
+              echo
               echo "--------------------------------------------------------------------"
               echo "old version of $container_name running SUCCESSFULLY"
               echo "--------------------------------------------------------------------"
+              echo
+              echo
            
         fi
         set +x
