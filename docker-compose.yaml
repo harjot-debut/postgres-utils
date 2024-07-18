@@ -9,7 +9,7 @@ x-logging: &default-logging
 services:
   frontend-switchboard:
     container_name: frontend-switchboard
-    restart: always 
+    restart: unless-stopped 
     image: hs60/switchboard-frontend:${FRONTEND_IMAGE_TAG}
     logging: *default-logging  
     network_mode: "host"
@@ -30,7 +30,7 @@ services:
       - ./uploads:/usr/src/app/uploads
       - /var/run/docker.sock:/var/run/docker.sock
       # - ./docker-compose.yaml:/usr/src/app/docker-compose.yaml
-    restart: always  
+    restart: unless-stopped  
     logging: *default-logging
     # command: ["/bin/sh", "/usr/src/app/update-agent.sh"]
     network_mode: "host"
@@ -39,7 +39,7 @@ services:
 
   switchboard-update:
     container_name: switchboard-update
-    restart: always 
+    restart: unless-stopped 
     image:  hs60/switchboard-cron-job:latest
     logging: *default-logging  
     network_mode: "host"
@@ -62,7 +62,7 @@ services:
 #   postgres_db:
 #     image: postgres:16.3
 #     container_name: postgres-db
-#     restart: always
+#     restart: unless-stopped
 #     volumes:
 #       - db-data:/var/lib/postgresql/data
 #       # - ./initdb.d:/docker-entrypoint-initdb.d
@@ -86,7 +86,7 @@ services:
 #   postgres_db:
 #     image: postgres:16.3
 #     container_name: postgres-db
-#     restart: always
+#     restart: unless
 #     volumes:
 #       - db-data:/var/lib/postgresql/data
 #       # - ./initdb.d:/docker-entrypoint-initdb.d
