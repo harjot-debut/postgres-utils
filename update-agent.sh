@@ -310,7 +310,7 @@ update_image() {
             exit 1
         fi
      
-        sleep 10
+        sleep 5
 
 
         echo "==================================================================="
@@ -331,6 +331,9 @@ update_image() {
 
 
         $DOCKER_COMPOSE -f $DOCKER_COMPOSE_FILE up -d $container_name
+
+        sleep 5
+        
         if [ $? -ne 0 ]; then
               echo
               echo "--------------------------------------------------------------------"
